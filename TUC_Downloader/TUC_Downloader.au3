@@ -6,6 +6,10 @@
 #AutoIt3Wrapper_Run_AU3Check=n
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
+#cs
+2016-07-02 -- Premier commit sur github
+#ce
+
 FileChangeDir(@ScriptDir)
 HttpSetProxy(0)
 
