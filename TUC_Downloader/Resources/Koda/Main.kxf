@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<object type="TAForm" name="Main">
+	<properties>
+		<property name="Left" vt="Int16">185</property>
+		<property name="Top" vt="Int16">150</property>
+		<property name="Width" vt="Int16">630</property>
+		<property name="Height" vt="Int16">475</property>
+		<property name="Caption" vt="String">Client Updapy</property>
+		<property name="Color" vt="Ident">clBtnFace</property>
+		<property name="Font.Charset" vt="Ident">DEFAULT_CHARSET</property>
+		<property name="Font.Color" vt="Ident">clWindowText</property>
+		<property name="Font.Height" vt="Int8">-11</property>
+		<property name="Font.Name" vt="String">MS Sans Serif</property>
+		<property name="Font.Style" vt="Set"/>
+		<property name="Menu" vt="Ident">Menu</property>
+		<property name="OldCreateOrder" vt="False">False</property>
+		<property name="Visible" vt="True">True</property>
+		<property name="Style" vt="Int32">-1798373376</property>
+		<property name="ExStyle" vt="Int16">256</property>
+		<property name="Version" vt="String">1.04</property>
+		<property name="Description" vt="String">Client Updapy</property>
+		<property name="TrayMenu" vt="Ident">TrayMenu</property>
+		<property name="FormOptOnEvent" vt="True">True</property>
+		<property name="FormOptExpVars" vt="False">False</property>
+		<property name="FormOptPopulate" vt="True">True</property>
+		<property name="FormOptVarsForSet" vt="False">False</property>
+		<property name="FormOptIndentChar" vt="Int8">0</property>
+		<property name="FormOptIndentCount" vt="Int8">1</property>
+		<property name="FormOptIndentInit" vt="Int8">0</property>
+		<property name="FormOptVarScope" vt="Int8">1</property>
+		<property name="Resizing" vt="Set">DockAuto</property>
+		<property name="PixelsPerInch" vt="Int8">96</property>
+		<property name="TextHeight" vt="Int8">13</property>
+	</properties>
+	<components>
+		<object type="TAMenu" name="Menu">
+			<properties>
+				<property name="Left" vt="Int8">0</property>
+				<property name="Top" vt="Int8">0</property>
+				<property name="Width" vt="Int8">28</property>
+				<property name="Height" vt="Int8">28</property>
+				<property name="Associate" vt="Ident">Owner</property>
+				<property name="WrappedName" vt="String">MainMenu1</property>
+				<property name="Description" vt="String">Menu</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TATrayMenu" name="TrayMenu">
+			<properties>
+				<property name="Left" vt="Int8">0</property>
+				<property name="Top" vt="Int8">0</property>
+				<property name="Width" vt="Int8">28</property>
+				<property name="Height" vt="Int8">28</property>
+				<property name="Associate" vt="Ident">Owner</property>
+				<property name="WrappedName" vt="String">ATrayMenu1</property>
+				<property name="Description" vt="String">Tray</property>
+				<property name="PicturePath" vt="String">D:\Dossiers\Documents\Mes Documents\Programmation\DevAutoIt\Dev_Updapy_Client\Updapy_Client\Resources\Images\Updapy.ico</property>
+				<property name="IconDebug" vt="True">True</property>
+				<property name="MouseClick" vt="Set">mcPriPress, mcSecPress</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAImageList" name="tbImages">
+			<properties>
+				<property name="Left" vt="Int8">0</property>
+				<property name="Top" vt="Int8">0</property>
+				<property name="Width" vt="Int8">28</property>
+				<property name="Height" vt="Int8">28</property>
+				<property name="WrappedName" vt="String">WrappedImageList1</property>
+				<property name="Description" vt="String">tbImages</property>
+				<property name="Images" vt="Collection">
+					<collection>
+						<item>
+							<property name="Path" vt="String">D:\Dossiers\Documents\Mes Documents\Programmation\DevAutoIt\Dev_Updapy_Client\Updapy_Client\Resources\Images\Updapy.ico</property>
+							<property name="Index" vt="Int8">0</property>
+						</item>
+						<item>
+							<property name="Path" vt="String">D:\Dossiers\Documents\Mes Documents\Programmation\DevAutoIt\Dev_Updapy_Client\Updapy_Client\Resources\Images\add.ico</property>
+							<property name="Index" vt="Int8">0</property>
+						</item>
+						<item>
+							<property name="Path" vt="String">D:\Dossiers\Documents\Mes Documents\Programmation\DevAutoIt\Dev_Updapy_Client\Updapy_Client\Resources\Images\remove.ico</property>
+							<property name="Index" vt="Int8">0</property>
+						</item>
+						<item>
+							<property name="Path" vt="String">C:\Windows\System32\shell32.dll</property>
+							<property name="Index" vt="Int16">258</property>
+						</item>
+						<item>
+							<property name="Path" vt="String">C:\Windows\System32\shell32.dll</property>
+							<property name="Index" vt="Int16">315</property>
+						</item>
+					</collection>
+				</property>
+				<property name="ImageWidth" vt="Int8">32</property>
+				<property name="ImageHeight" vt="Int8">32</property>
+				<property name="ColorDepth" vt="Ident">cd32bit</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAListView" name="ListView">
+			<properties>
+				<property name="Left" vt="Int8">8</property>
+				<property name="Top" vt="Int8">48</property>
+				<property name="Width" vt="Int16">601</property>
+				<property name="Height" vt="Int16">337</property>
+				<property name="CtrlStyle" vt="Int32">1342373901</property>
+				<property name="CtrlExStyle" vt="Int16">518</property>
+				<property name="Resizing" vt="Set">DockLeft, DockRight, DockTop, DockBottom</property>
+				<property name="Columns" vt="Collection">
+					<collection>
+						<item/>
+						<item/>
+						<item/>
+					</collection>
+				</property>
+				<property name="Description" vt="String">ListView</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAToolBar" name="ToolBar">
+			<properties>
+				<property name="Left" vt="Int8">-2</property>
+				<property name="Top" vt="Int8">-2</property>
+				<property name="Width" vt="Int16">618</property>
+				<property name="Height" vt="Int8">48</property>
+				<property name="ButtonHeight" vt="Int8">38</property>
+				<property name="ButtonWidth" vt="Int8">39</property>
+				<property name="Caption" vt="String">ToolBar</property>
+				<property name="EdgeBorders" vt="Set"/>
+				<property name="Flat" vt="True">True</property>
+				<property name="Images" vt="Ident">tbImages</property>
+				<property name="TabOrder" vt="Int8">1</property>
+				<property name="CtrlStyle" vt="Int32">1409288192</property>
+				<property name="CtrlExStyle" vt="Int16">512</property>
+			</properties>
+			<components>
+				<object type="TAToolButton" name="tbUpdapy">
+					<properties>
+						<property name="Left" vt="Int8">0</property>
+						<property name="Top" vt="Int8">0</property>
+						<property name="Hint" vt="String">tbUpdapy</property>
+						<property name="Caption" vt="String">tbUpdapy</property>
+						<property name="ImageIndex" vt="Int8">0</property>
+						<property name="Style" vt="Ident">tbsButton</property>
+						<property name="CtrlStyle" vt="Int8">0</property>
+						<property name="Description" vt="String">tbUpdapy</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAToolButton" name="tbPlus">
+					<properties>
+						<property name="Left" vt="Int8">39</property>
+						<property name="Top" vt="Int8">0</property>
+						<property name="Hint" vt="String">tbPlus</property>
+						<property name="Caption" vt="String">tbPlus</property>
+						<property name="ImageIndex" vt="Int8">1</property>
+						<property name="Style" vt="Ident">tbsButton</property>
+						<property name="CtrlStyle" vt="Int8">0</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAToolButton" name="tbMinus">
+					<properties>
+						<property name="Left" vt="Int8">78</property>
+						<property name="Top" vt="Int8">0</property>
+						<property name="Hint" vt="String">tbMinus</property>
+						<property name="Caption" vt="String">tbMinus</property>
+						<property name="ImageIndex" vt="Int8">2</property>
+						<property name="Style" vt="Ident">tbsButton</property>
+						<property name="CtrlStyle" vt="Int8">0</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAToolButton" name="tbSave">
+					<properties>
+						<property name="Left" vt="Int8">117</property>
+						<property name="Top" vt="Int8">0</property>
+						<property name="Hint" vt="String">tbSave</property>
+						<property name="Caption" vt="String">tbSave</property>
+						<property name="ImageIndex" vt="Int8">3</property>
+						<property name="Style" vt="Ident">tbsButton</property>
+						<property name="CtrlStyle" vt="Int8">0</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAToolButton" name="tbParams">
+					<properties>
+						<property name="Left" vt="Int16">156</property>
+						<property name="Top" vt="Int8">0</property>
+						<property name="Hint" vt="String">tbParams</property>
+						<property name="Caption" vt="String">tbParams</property>
+						<property name="ImageIndex" vt="Int8">4</property>
+						<property name="Style" vt="Ident">tbsButton</property>
+						<property name="CtrlStyle" vt="Int8">0</property>
+					</properties>
+					<components/>
+				</object>
+			</components>
+		</object>
+		<object type="TAProgress" name="tbProgress">
+			<properties>
+				<property name="Left" vt="Int16">456</property>
+				<property name="Top" vt="Int8">8</property>
+				<property name="Width" vt="Int16">150</property>
+				<property name="Height" vt="Int8">25</property>
+				<property name="TabOrder" vt="Int8">2</property>
+				<property name="CtrlStyle" vt="Int32">1342308352</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Resizing" vt="Set">DockRight, DockTop, DockHeight</property>
+				<property name="Description" vt="String">Progress</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TAStatusBar" name="StatusBar">
+			<properties>
+				<property name="Left" vt="Int8">0</property>
+				<property name="Top" vt="Int16">397</property>
+				<property name="Width" vt="Int16">614</property>
+				<property name="Height" vt="Int8">19</property>
+				<property name="Panels" vt="Collection">
+					<collection/>
+				</property>
+				<property name="SimpleText" vt="String">Status</property>
+				<property name="CtrlStyle" vt="Int32">1342177536</property>
+				<property name="CtrlExStyle" vt="Int8">0</property>
+				<property name="Description" vt="String">StatusBar</property>
+			</properties>
+			<components/>
+		</object>
+		<object type="TMainMenu" name="MainMenu1">
+			<properties/>
+			<components>
+				<object type="TAMenuItem" name="Menu_File">
+					<properties>
+						<property name="Caption" vt="String">&amp;Fichier</property>
+					</properties>
+					<components>
+						<object type="TAMenuItem" name="File_Exit">
+							<properties>
+								<property name="Caption" vt="String">Quitter</property>
+							</properties>
+							<components/>
+						</object>
+					</components>
+				</object>
+				<object type="TAMenuItem" name="Menu_Manage">
+					<properties>
+						<property name="Caption" vt="String">&amp;Gestion</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAMenuItem" name="Menu_Help">
+					<properties>
+						<property name="Caption" vt="String">&amp;Aide</property>
+					</properties>
+					<components>
+						<object type="TAMenuItem" name="Help_Site">
+							<properties>
+								<property name="Caption" vt="String">Site Updapy</property>
+							</properties>
+							<components/>
+						</object>
+						<object type="TAMenuItem" name="Help_About">
+							<properties>
+								<property name="Caption" vt="String">A propos</property>
+							</properties>
+							<components/>
+						</object>
+					</components>
+				</object>
+			</components>
+		</object>
+		<object type="TPopupMenu" name="ATrayMenu1">
+			<properties/>
+			<components>
+				<object type="TAMenuItem" name="Tray_About">
+					<properties>
+						<property name="Caption" vt="String">A Propos</property>
+						<property name="OnClick" vt="String">Help_AboutClick</property>
+					</properties>
+					<components/>
+				</object>
+				<object type="TAMenuItem" name="Tray_Quit">
+					<properties>
+						<property name="Caption" vt="String">Quitter</property>
+						<property name="OnClick" vt="String">File_ExitClick</property>
+					</properties>
+					<components/>
+				</object>
+			</components>
+		</object>
+		<object type="TImageList" name="WrappedImageList1">
+			<properties>
+				<property name="DrawingStyle" vt="Ident">dsTransparent</property>
+				<property name="Height" vt="Int8">32</property>
+				<property name="Width" vt="Int8">32</property>
+			</properties>
+			<components/>
+		</object>
+	</components>
+</object>
