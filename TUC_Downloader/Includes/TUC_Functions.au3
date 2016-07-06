@@ -121,8 +121,8 @@ Func GetAppDetail($app, $API, $Base64_ID)
 EndFunc   ;==>GetAppDetail
 
 Func GetAppsList($API, $Base64_ID)
-	_ProgressOn("Progression", "Récupération de la liste des logiciels.", "", "", False, $Add, True)
-	_ProgressSet(0, "Merci de patienter.")
+	_ProgressOn(Translate("Progress"), Translate("Getting the softwares list."), "", "", False, $Add, True)
+	_ProgressSet(0, Translate("Please be patient."))
 	_ProgressWait(True)
 ;~ 	Sleep(100)
 	;Créaction de l'objet HTTP
@@ -220,7 +220,7 @@ Func Afficher_ListView()
 		Next
 		_GUICtrlListView_EndUpdate($ListView)
 	EndIf
-	_GUICtrlStatusBar_SetText($StatusBar, @TAB & _GUICtrlListView_GetItemCount($ListView) & " logiciels dans la liste", 1)
+	_GUICtrlStatusBar_SetText($StatusBar, @TAB & _GUICtrlListView_GetItemCount($ListView) & " " & Translate("softwares followed."), 1)
 EndFunc   ;==>Afficher_ListView
 
 Func Afficher_Add_List()
@@ -268,7 +268,6 @@ Func _GetDisplaySize($iSize, $iPlaces = 2)
 	Next
 	Return $iSize & ' Bytes'
 EndFunc   ;==>_GetDisplaySize
-
 
 Dim $Vitesse_Old = 0, $Vitesse_Time = 0, $vit = 0
 Func Vitesse($data)
@@ -321,7 +320,7 @@ Func _LanguageInitCombo()
 	Local $hSearch = FileFindFirstFile(".\Resources\Languages\*.ini")
 	; Check if the search was successful, if not display a message and return False.
 	If $hSearch = -1 Then
-		MsgBox($MB_SYSTEMMODAL, "", "Error: No files/directories matched the search pattern.")
+		MsgBox($MB_SYSTEMMODAL, "_LanguageInitCombo()", "Error: No files/directories matched the search pattern.")
 		Return False
 	EndIf
 	; Assign a Local variable the empty string which will contain the files names found.
@@ -426,7 +425,7 @@ Func Param_Save() ;Enregistre les paramètres dans le fichier ini et  lance Para
 	EndIf
 	IniWrite($param_ini, "OPTIONS", "PosMemo", $sTemp)
 	If Not FileExists(GUICtrlRead($iParam_DownDir)) Then
-		If MsgBox(BitOR($MB_ICONQUESTION,$MB_OKCANCEL) , Translate("New directory"), Translate("The selected path leads to a non-existing directory.")&@CRLF&Translate("Do you want us to create it ?")&@CRLF&@CRLF&Translate("(Click OK to create the new directory.)")) = $IDCANCEL Then
+		If MsgBox(BitOR($MB_ICONQUESTION, $MB_OKCANCEL), Translate("New directory"), Translate("The selected path leads to a non-existing directory.") & @CRLF & Translate("Do you want us to create it ?") & @CRLF & @CRLF & Translate("(Click OK to create the new directory.)")) = $IDCANCEL Then
 			GUICtrlSetState($TabParam_Options, $GUI_SHOW)
 			Return False
 		Else

@@ -1,13 +1,16 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\Images\TUC\TUC.ico
 #AutoIt3Wrapper_Outfile=TUC_Downloader.exe
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.1
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.2
 #AutoIt3Wrapper_Res_Language=1036
 #AutoIt3Wrapper_Run_AU3Check=n
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs
-2016-07-02 -- Premier commit sur github
+	2016-07-02 -- Premier commit sur github
+	2016-07-06 -- Correction du verrouillage de la taille mini de la fenêtre principale
+	|- Traductions en français
+	|- Corrections multiples
 #ce
 
 FileChangeDir(@ScriptDir)
@@ -22,13 +25,13 @@ Global $First = False
 Global $Add = 0
 Global $Param = 0
 Global $Survey = 0
-Global $param_ini = @AppDataDir&"\TUC\TUC.ini"
+Global $param_ini = @AppDataDir & "\TUC\TUC.ini"
 Global Const $AVEC_HSCROLL = False
 
 If Not FileExists($param_ini) Then
 	MsgBox($MB_ICONWARNING, "TUC_Downloader - First start", "It seems like it is the first time you open ""TUC_Downloader""." & @CRLF & @CRLF & "Please set your parameters.") ; Pas de traduction ici : la langue n'est pas encore sélectionnée !
 	$First = True
-	DirCreate(@AppDataDir&"\TUC")
+	DirCreate(@AppDataDir & "\TUC")
 EndIf
 Param_Set()
 
@@ -49,7 +52,7 @@ GUISetOnEvent($GUI_EVENT_MINIMIZE, "MainMinimize")
 GUISetOnEvent($GUI_EVENT_MAXIMIZE, "MainMaximize")
 GUISetOnEvent($GUI_EVENT_RESTORE, "MainRestore")
 GUISetIcon(".\Resources\Images\TUC\TUC.ico")
-_WinSetMinMax(615, 225)
+_WinSetMinMax($Main, 615, 225)
 
 ;Création de la MenuBar (mb*)
 Global Enum $mbExit = 200, $mbAdd, $mbDown, $mbSearch, $mbParam, $mbSite, $mbAbout
@@ -115,12 +118,12 @@ Global $StatusBar = _GUICtrlStatusBar_Create($Main, -1, "", BitOR($SBARS_SIZEGRI
 Dim $aParts = [140, 300, 595]
 _GUICtrlStatusBar_SetParts($StatusBar, $aParts)
 If Not @Compiled Then
-	_GUICtrlStatusBar_SetText($StatusBar, Translate("  Not compiled version"), 0)
+	_GUICtrlStatusBar_SetText($StatusBar, "  " & Translate("Not compiled version"), 0)
 Else
-	_GUICtrlStatusBar_SetText($StatusBar, Translate("  Version: ") & $Version, 0)
+	_GUICtrlStatusBar_SetText($StatusBar, "  " & Translate("Version: ") & $Version, 0)
 EndIf
 ;~ _GUICtrlStatusBar_EmbedControl($StatusBar, 2, GUICtrlGetHandle(GUICtrlCreateLabel("Surveillance inactive     ", 5,5)))
-_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled     "), 2)
+_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled") & "     ", 2)
 ;~ _GUICtrlStatusBar_SetBkColor($StatusBar, 0x00ff00)
 ;~ StyleToggle(0)
 
@@ -173,13 +176,13 @@ Func Tray_Survey()
 	If $Survey = 0 Then
 		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
 		_Trace("Surveillance active.")
-		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey enabled     "), 2)
+		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey enabled") & "     ", 2)
 		$Survey = 1
 	Else
 		AdlibUnRegister("_DownReg")
 		_Trace("Surveillance inactive.")
 		TrayItemSetState($Tray_Survey, $TRAY_UNCHECKED)
-		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled     "), 2)
+		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled") & "     ", 2)
 		$Survey = 0
 	EndIf
 EndFunc   ;==>Tray_Survey
@@ -222,7 +225,7 @@ Func Help_About()
 	GUICtrlCreateIcon(".\Resources\Images\TUC\TUC.ico", -1, 13, 13, 64, 64)
 	GUICtrlCreateLabel("TUC_Downloader", 100, 20, 100, 20)
 	GUICtrlSetFont(-1, 10)
-	GUICtrlCreateLabel(Translate("Version: ") & $Version, 100, 45, 100, 17)
+	GUICtrlCreateLabel(Translate("Version:") & " " & $Version, 100, 45, 100, 17)
 	GUICtrlCreateLabel("Tiny Updapy Client - Downloader", 10, 90, 240, 17)
 	GUICtrlCreateLabel(Translate("Related softwares: ""TUC Server"" and ""TUC Client""."), 10, 110, 240, 37)
 	GUICtrlCreateLabel(Translate("Licence/Rights: GNU GPL."), 10, 160, 240, 17)
@@ -399,7 +402,7 @@ Func tbDown($mb = 0)
 				EndSwitch
 				_Trace("Lancement du téléchargement à l'adresse : " & $lien)
 				If $lien <> "" Then ;Téléchargement du logiciel
-					_ProgressOn(Translate("Download"), _GUICtrlListView_GetItem($ListView, $i)[3], Translate("Version: ") & $aGet[2], ".\Resources\Images\Softs\BMP\" & $sMsg & ".bmp", False, $Main, True)
+					_ProgressOn(Translate("Download"), _GUICtrlListView_GetItem($ListView, $i)[3], Translate("Version:") & " " & $aGet[2], ".\Resources\Images\Softs\BMP\" & $sMsg & ".bmp", False, $Main, True)
 ;~ 					$hDownload = InetGet($lien, $CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe", BitOR($INET_FORCERELOAD, $INET_IGNORESSL, $INET_BINARYTRANSFER), $INET_DOWNLOADBACKGROUND)
 					$hDownload = InetGet($lien, $CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe", $INET_FORCERELOAD, $INET_DOWNLOADBACKGROUND)
 					$iFileSize = InetGetSize($lien, $INET_FORCERELOAD)
@@ -444,6 +447,7 @@ Func tbDown($mb = 0)
 						Do
 							FileDelete($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
 						Until Not FileExists($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
+						_Trace("Fichier """ & $CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe supprimé.")
 					Else
 						Local $FileSize = FileGetSize($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
 						If $iFileSize > 0 Then
@@ -453,9 +457,9 @@ Func tbDown($mb = 0)
 						EndIf
 						If $recup > 0.5000 And $iFileSize > 0 Or $FileSize < 204800 Then
 							MsgBox($MB_ICONWARNING, Translate("Download error"), Translate("The download has gone wrong.") & @CRLF & _
-									Translate("Online size: ") & $iFileSize & " Bytes" & @CRLF & _
-									Translate("Local size: ") & $FileSize & " Bytes" & @CRLF & _
-									Translate("Ratio: ") & $recup, 15)
+									Translate("Online size:") & " " & $iFileSize & " Bytes" & @CRLF & _
+									Translate("Local size:") & " " & $FileSize & " Bytes" & @CRLF & _
+									Translate("Ratio:") & " " & $recup, 15)
 							FileDelete($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
 						Else
 							SQL_Update_If_Different($hBDD, "Logiciels", "Version_Dispo", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
@@ -481,7 +485,7 @@ Func tbSearch($mb = 0)
 	Local $aFileList = _FileListToArray($CheminLogiciels, "*", $FLTA_FILES)
 	If IsArray($aFileList) Then
 		Local $file_version
-		_ProgressOn("Fichiers Locaux", "Recherche des logiciels déjà téléchargés.", "", "", True, $Main, True)
+		_ProgressOn(Translate("Local Files"), Translate("Searching for local softwares."), "", "", True, $Main, True)
 		_ProgressWait(True)
 		Sleep(2000)
 		_ProgressWait(False)
@@ -515,7 +519,7 @@ Func tbSearch($mb = 0)
 	If $succes = False Then Return
 	;Chercher les versions disponibles en ligne
 	Local $sMsg
-	_ProgressOn("Fichiers Distants", "Recherche des versions en ligne.", "Initialisation...", ".\Resources\Images\TUC\TUC.ico", True, $Main, True)
+	_ProgressOn(Translate("Remote Files"), Translate("Searching for remote files versions."), Translate("Initializing..."), ".\Resources\Images\TUC\TUC.ico", True, $Main, True)
 	_ProgressSet(0, "0 / " & $Dim)
 	For $i = 0 To $Dim - 1
 		If _ProgressGet() = 1 Then
@@ -525,7 +529,7 @@ Func tbSearch($mb = 0)
 				SQL_Update_If_Different($hBDD, "Logiciels", "Version_Download", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
 			EndIf
 			$prog = Round(($i / $Dim) * 100)
-			_ProgressSet($prog, $i + 1 & " / " & $Dim & " logiciels.", _GUICtrlListView_GetItem($ListView, $i)[3])
+			_ProgressSet($prog, $i + 1 & " / " & $Dim & " " & Translate("softwares."), _GUICtrlListView_GetItem($ListView, $i)[3])
 			_Trace("Téléchargement infos en ligne : " & $i + 1 & " / " & $Dim & " logiciels. | " & _GUICtrlListView_GetItem($ListView, $i)[3])
 		EndIf
 		If _ProgressGet() = 2 Then ;Si le progress est en pause on fait en sorte que le for n'avance plus et on met un peu de sleep pour soulager le processeur.
@@ -540,7 +544,7 @@ Func tbSearch($mb = 0)
 	Next
 	If $mb = 0 Then Afficher_ListView()
 	_ProgressOff()
-	If $mb = 0 Then MsgBox($MB_ICONINFORMATION, "Mise à jour terminée", "Fin de la recherche des versions ""en ligne"".", 20)
+	If $mb = 0 Then MsgBox($MB_ICONINFORMATION, Translate("Update completed"), Translate("End of remote softwares versions research."), 20)
 	If $succes Then
 		Return True
 	Else
@@ -603,8 +607,8 @@ Func tbParam()
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateGroup(Translate("GUI position"), 20, 145, 270, 75)
 		GUICtrlSetFont(-1, 10)
-		Global $rParam_PosMemo = GUICtrlCreateRadio(Translate("Memorize GUI position"), 40, 165, 170, 17)
-		Global $rParam_PosNotMemo = GUICtrlCreateRadio(Translate("Do not memorize GUI position"), 40, 190, 170, 17)
+		Global $rParam_PosMemo = GUICtrlCreateRadio(Translate("Memorize GUI position"), 40, 165, 200, 17)
+		Global $rParam_PosNotMemo = GUICtrlCreateRadio(Translate("Do not memorize GUI position"), 40, 190, 200, 17)
 		GUICtrlSetState(-1, $GUI_CHECKED)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateGroup(Translate("Download directory"), 20, 225, 270, 100)
@@ -618,12 +622,12 @@ Func tbParam()
 		Global $TabParam_Proxy = GUICtrlCreateTabItem(Translate("Proxy"))
 		GUICtrlCreateGroup(Translate("Proxy parameters"), 20, 35, 270, 205)
 		GUICtrlSetFont(-1, 10)
-		Global $rParam_NoProxy = GUICtrlCreateRadio(Translate("No proxy"), 40, 55, 150, 17)
+		Global $rParam_NoProxy = GUICtrlCreateRadio(Translate("No proxy"), 40, 55, 200, 17)
 		GUICtrlSetOnEvent(-1, "rParam_NoProxy")
-		Global $rParam_SysProxy = GUICtrlCreateRadio(Translate("Use proxy system settings"), 40, 80, 150, 17)
+		Global $rParam_SysProxy = GUICtrlCreateRadio(Translate("Use proxy system settings"), 40, 80, 200, 17)
 		GUICtrlSetOnEvent(-1, "rParam_SysProxy")
 		GUICtrlSetState(-1, $GUI_CHECKED)
-		Global $rParam_ManProxy = GUICtrlCreateRadio(Translate("Configure the proxy manually"), 40, 105, 150, 17)
+		Global $rParam_ManProxy = GUICtrlCreateRadio(Translate("Configure the proxy manually"), 40, 105, 200, 17)
 		GUICtrlSetOnEvent(-1, "rParam_ManProxy")
 		Global $lParam_ProxyUrl = GUICtrlCreateLabel(Translate("Proxy URL :"), 40, 136, 80, 17, $SS_RIGHT)
 		Global $lParam_ProxyPort = GUICtrlCreateLabel(Translate("Connexion port :"), 40, 161, 80, 17, $SS_RIGHT)
@@ -668,7 +672,7 @@ Func Add_btRefresh()
 	Local $hDownload = 0
 	Local $name = ""
 	Local $hQuery, $aRow, $sMsg
-	_ProgressOn("Progression", "Mise à jour de la liste.", "", "", False, $Add, True)
+	_ProgressOn(Translate("Progress"), Translate("Updating softwares list."), "", "", False, $Add, True)
 	_ProgressSet(0, "Démarrage.")
 	For $i = 0 To $aDim - 1
 		$sMsg = SQL_Get_Data($hBDD, "Logiciels", "Titre_Long", "Titre_Court = '" & SQL_String(String($aGet[$i][1])) & "'")
@@ -690,9 +694,9 @@ Func Add_btRefresh()
 				_Trace("L'image " & $name & ".bmp n'existe pas : conversion impossible car source introuvable.")
 			EndIf
 		EndIf
-		_ProgressSet(Round(($i / $aDim) * 100), "Traitement logiciel N°" & $i + 1 & "/" & $aDim & ".")
+		_ProgressSet(Round(($i / $aDim) * 100), Translate("Software N°") & $i + 1 & "/" & $aDim & ".")
 	Next
-	_ProgressSet(100, "Fini.")
+	_ProgressSet(100, Translate("End."))
 	Afficher_Add_List()
 	_ProgressOff()
 EndFunc   ;==>Add_btRefresh

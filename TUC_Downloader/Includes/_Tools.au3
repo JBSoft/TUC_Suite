@@ -51,14 +51,23 @@ EndFunc   ;==>_WinSetSize
 ; Return values .: None
 ; Author ........: jbs
 ; ===============================================================================================================================
-Func _WinSetMinMax($x0, $y0, $x1 = -1, $y1 = -1)
+Func _WinSetMinMax($hWnd, $x0, $y0, $x1 = -1, $y1 = -1)
 	Local Const $WM_GETMINMAXINFO = 0x24
-	Global $aUtil_MinMax[4] ; La variable globale est définie ici pour que la fonction soit "à emporter"
-	$aUtil_MinMax[0] = $x0
-	$aUtil_MinMax[1] = $y0
-	$aUtil_MinMax[2] = $x1
-	$aUtil_MinMax[3] = $y1
-	GUIRegisterMsg($WM_GETMINMAXINFO, 'MY_WM_GETMINMAXINFO')
+	Global $aWset_MinMax[5][10] ; La variable globale est définie ici pour que la fonction soit "à emporter"
+	Local $i = 0, $ok = False
+	Do
+		If $aWset_MinMax[0][$i] = 0 Then
+			$aWset_MinMax[0][$i] = $hWnd
+			$aWset_MinMax[1][$i] = $x0
+			$aWset_MinMax[2][$i] = $y0
+			$aWset_MinMax[3][$i] = $x1
+			$aWset_MinMax[4][$i] = $y1
+			$ok = True
+		EndIf
+		$i += 1
+		If $i > 9 Then _Trace("Erreur lors de la définition Max/Min de la GUI (Mémoire pleine).")
+	Until $ok = True Or $i > 9
+	GUIRegisterMsg($WM_GETMINMAXINFO, '_WM_GETMINMAXINFO')
 EndFunc   ;==>_WinSetMinMax
 
 ; #FUNCTION# ====================================================================================================================
@@ -72,14 +81,18 @@ EndFunc   ;==>_WinSetMinMax
 ; Return values .: None
 ; Author ........: jbs
 ; ===============================================================================================================================
-Func MY_WM_GETMINMAXINFO($hWnd, $Msg, $wParam, $lParam)
+Func _WM_GETMINMAXINFO($hWnd, $Msg, $wParam, $lParam)
 	Local $minmaxinfo = DllStructCreate('int;int;int;int;int;int;int;int;int;int', $lParam)
-	DllStructSetData($minmaxinfo, 7, $aUtil_MinMax[0]) ; min X
-	DllStructSetData($minmaxinfo, 8, $aUtil_MinMax[1]) ; min Y
-	If $aUtil_MinMax[2] <> -1 Then DllStructSetData($minmaxinfo, 9, $aUtil_MinMax[2]) ; max X
-	If $aUtil_MinMax[3] <> -1 Then DllStructSetData($minmaxinfo, 10, $aUtil_MinMax[3]) ; max Y
+	For $i = 0 To 9
+		If $aWset_MinMax[0][$i] = $hWnd Then
+			DllStructSetData($minmaxinfo, 7, $aWset_MinMax[1][$i]) ; min X
+			DllStructSetData($minmaxinfo, 8, $aWset_MinMax[2][$i]) ; min Y
+			If $aWset_MinMax[3][$i] <> -1 Then DllStructSetData($minmaxinfo, 9, $aWset_MinMax[3][$i]) ; max X
+			If $aWset_MinMax[4][$i] <> -1 Then DllStructSetData($minmaxinfo, 10, $aWset_MinMax[4][$i]) ; max Y
+		EndIf
+	Next
 	Return $GUI_RUNDEFMSG
-EndFunc   ;==>MY_WM_GETMINMAXINFO
+EndFunc   ;==>_WM_GETMINMAXINFO
 
 ;~ Func StyleToggle($Off = 1)
 ;~ 	If Not StringInStr(@OSTYPE, "WIN32_NT") Then Return 0
@@ -194,16 +207,16 @@ EndFunc   ;==>_Time_day2ms
 Func Check_Internet_Status()
 	If OnlineStatus() = 1 Then
 		GUICtrlSetColor($lParam_ProxyStatus, 0x007f00)
-		GUICtrlSetData($lParam_ProxyStatus, "You are connected")
+		GUICtrlSetData($lParam_ProxyStatus, Translate("You are connected"))
 	Else
 		GUICtrlSetColor($lParam_ProxyStatus, 0xAA0000)
-		GUICtrlSetData($lParam_ProxyStatus, "You are disconnected")
+		GUICtrlSetData($lParam_ProxyStatus, Translate("You are disconnected"))
 	EndIf
 EndFunc   ;==>Check_Internet_Status
 
 Func OnlineStatus()
 	GUICtrlSetColor($lParam_ProxyStatus, 0xFF9104)
-	GUICtrlSetData($lParam_ProxyStatus, "Testing")
+	GUICtrlSetData($lParam_ProxyStatus, Translate("Testing"))
 	$inet = InetGet("http://www.google.com", @TempDir & "\connectivity-test.tmp", 3, 0)
 	If @error Or $inet = 0 Then
 		Return 0
