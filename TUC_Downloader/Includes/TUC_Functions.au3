@@ -82,15 +82,46 @@ EndFunc   ;==>_Base64Encode
 ; Example .......: No
 ; ===============================================================================================================================
 Func GetAppDetail($app, $API, $Base64_ID)
+	$FuncName = """GetAppDetail"""
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
 	;Créaction de l'objet HTTP
 	Local $oHTTP = ObjCreate("winhttp.winhttprequest.5.1")
-	If Not IsObj($oHTTP) Then MsgBox($MB_ICONERROR, "Erreur", "Erreur de création de l'objet ""Requête HTTP"".")
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Lancement création objet HTTP.")
+	If Not IsObj($oHTTP) Then
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncNamea & " - Erreur de création de l'objet HTTP.")
+		MsgBox($MB_ICONERROR, "Erreur", "Erreur de création de l'objet ""Requête HTTP"".")
+		Return -1
+	EndIf
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [1]")
+		Return
+	EndIf
 	;Envoi de le requête HTTP
 	$oHTTP.Open("GET", "http://www.updapy.com/api/v1/last-version?application=" & $app & "&key=" & $API)
+	If @error Then Return
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [2].")
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture HTTP GET request.")
 	$oHTTP.SetRequestHeader("Authorization", "Basic " & $Base64_ID)
+	If @error Then Return
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [3].")
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Définition du header HTTP.")
 	$oHTTP.Send()
+	If @error Then Return
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [4].")
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Envoi de la requète HTTP.")
 	;Récupération de la réponse HTTP
 	$HTTPresponse = $oHTTP.Responsetext
+	If @error Then Return
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Récupération de la réponse HTTP.")
 	;On split le texte suivant les "," pour avoir tous les "items"
 	$items = StringSplit($HTTPresponse, ",", $STR_NOCOUNT)
 	;Récupération du nom de l'appli
@@ -116,24 +147,75 @@ Func GetAppDetail($app, $API, $Base64_ID)
 	If $Fr64 <> "null" Then $Fr64 = StringTrimRight(StringTrimLeft($Fr64, 1), 1)
 	;Utilisation d'un tableau pour le renvoi des informations
 	Local $aRet[7] = [$Name, $Date, $Vers, $En32, $En64, $Fr32, $Fr64]
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction, retourne le tableau lu via HTTP.")
 	;Affectation du tableau au "Return"
 	Return $aRet
 EndFunc   ;==>GetAppDetail
 
 Func GetAppsList($API, $Base64_ID)
+	$FuncName = """GetAppsList"""
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
 	_ProgressOn(Translate("Progress"), Translate("Getting the softwares list."), "", "", False, $Add, True)
 	_ProgressSet(0, Translate("Please be patient."))
 	_ProgressWait(True)
 ;~ 	Sleep(100)
 	;Créaction de l'objet HTTP
 	Local $oHTTP = ObjCreate("winhttp.winhttprequest.5.1")
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Lancement création objet HTTP.")
+	If Not IsObj($oHTTP) Then
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncNamea & " - Erreur de création de l'objet HTTP.")
+		MsgBox($MB_ICONERROR, "Erreur", "Erreur de création de l'objet ""Requête HTTP"".")
+		_ProgressOff()
+		Return -1
+	EndIf
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [11]")
+		_ProgressOff()
+		Return
+	EndIf
 	;Envoi de le requête HTTP
 	$oHTTP.Open("GET", "http://www.updapy.com/api/v1/application-names?key=" & $API)
+	If @error Then
+		_ProgressOff()
+		Return
+	EndIf
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [12].")
+		_ProgressOff()
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture HTTP GET request.")
 	$oHTTP.SetRequestHeader("Authorization", "Basic " & $Base64_ID)
+	If @error Then
+		_ProgressOff()
+		Return
+	EndIf
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [13].")
+		_ProgressOff()
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Définition du header HTTP.")
 	$oHTTP.Send()
+	If @error Then
+		_ProgressOff()
+		Return
+	EndIf
+
+	If Not Ping("updapy.com") Then
+		_Trace("Abandon car site Updapy injoignable [14].")
+		_ProgressOff()
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Envoi de la requète HTTP.")
 ;~ 	_ProgressSet(10, "Attente de la réponse HTTP.")
 	;Récupération de la réponse HTTP
 	$HTTPresponse = $oHTTP.Responsetext
+	If @error Then
+		_ProgressOff()
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Récupération de la réponse HTTP.")
 ;~ 	_ProgressSet(20, "Décodage de la réponse HTTP.")
 	Local $tab1 = _JSONDecode($HTTPresponse)
 	Local $tab2 = $tab1[1][1]
@@ -152,6 +234,7 @@ Func GetAppsList($API, $Base64_ID)
 ;~ 	Sleep(200)
 	_ProgressWait(False)
 	_ProgressOff()
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction, retourne le tableau lu via HTTP.")
 	;Affectation du tableau au "Return"
 	Return $Tableau
 EndFunc   ;==>GetAppsList
@@ -239,6 +322,20 @@ Func Afficher_Add_List()
 	EndIf
 EndFunc   ;==>Afficher_Add_List
 
+Func Init_Survey_List()
+	_Trace("Initialisation de la liste des Softs suivis.")
+	Local $aResult, $iRows, $iColumns, $iRval, $aResult2, $iRows2, $iColumns2, $iRval2, $aResult3, $iRows3, $iColumns3, $iRval3, $aResult4, $iRows4, $iColumns4, $iRval4
+	$iRval = _SQLite_GetTable2d($hBDD, "SELECT Titre_Long, Titre_Court FROM Logiciels ORDER BY Titre_Court ASC;", $aResult, $iRows, $iColumns)
+	$iRval2 = _SQLite_GetTable2d($hBDD, "SELECT Titre_Court, Selection FROM Logiciels ORDER BY Titre_Court ASC;", $aResult2, $iRows2, $iColumns2)
+	If $iRval = $SQLITE_OK And $iRval2 = $SQLITE_OK Then
+		For $i = 1 To $iRows - 1
+			If $aResult2[$i][1] = "OUI" Then
+				SQL_Update_If_Different($hBDD, "Logiciels", "Selection", "Titre_Long = '" & SQL_String($aResult[$i][0]) & "'", "NON")
+			EndIf
+		Next
+	EndIf
+EndFunc   ;==>Init_Survey_List
+
 Func SQL_String($string)
 	$string = StringReplace($string, "'", "''")
 	Return $string
@@ -269,13 +366,29 @@ Func _GetDisplaySize($iSize, $iPlaces = 2)
 	Return $iSize & ' Bytes'
 EndFunc   ;==>_GetDisplaySize
 
-Dim $Vitesse_Old = 0, $Vitesse_Time = 0, $vit = 0
+Dim $Data_Old = 0, $Vitesse_Time = 0, $vit = 0, $Index = 0, $Vitesse_Hist[10], $max = False
 Func Vitesse($data)
+	;Initialisation la première fois
 	If $Vitesse_Time = 0 Then $Vitesse_Time = TimerInit()
-	If $data <> $Vitesse_Old And TimerDiff($Vitesse_Time) >= 250 Then
-		If ($data - $Vitesse_Old) * 4 > $vit Then $vit += (($data - $Vitesse_Old) * 4 - $vit) / 64
-		If ($data - $Vitesse_Old) * 4 < $vit Then $vit -= ($vit - ($data - $Vitesse_Old) * 4) / 64
-		$Vitesse_Old = $data
+	;Enregistrement du delta
+	If $data <> $Data_Old And TimerDiff($Vitesse_Time) >= 250 Then
+		$vit = 0
+		$Vitesse_Hist[$Index] = $data - $Data_Old
+		If $Index < 10 Then $Index += 1
+		If $Index = 10 Then
+			$Index = 0
+			$max = True
+		EndIf
+;~ 		If ($data - $Vitesse_Old) * 4 > $vit Then $vit += (($data - $Vitesse_Old) * 4 - $vit) / 64
+;~ 		If ($data - $Vitesse_Old) * 4 < $vit Then $vit -= ($vit - ($data - $Vitesse_Old) * 4) / 64
+		For $i = 0 To 9
+			If $Vitesse_Hist[$i] <> 0 Then $vit += $Vitesse_Hist[$i]
+			If $Vitesse_Hist[$i] = 0 Or $i = 9 Then
+				$vit = ($vit / $i + 1) * 4
+				If Not $max Then ExitLoop
+			EndIf
+		Next
+		$Data_Old = $data
 		$Vitesse_Time = TimerInit()
 ;~ 		ConsoleWrite("> Vitesse = "&$vit&" Bytes/s"&@CRLF)
 	EndIf
@@ -314,6 +427,26 @@ EndFunc   ;==>_LVWndProc
 Func _DownReg()
 	tbDown(1)
 EndFunc   ;==>_DownReg
+
+Func _TimeReg()
+	$min_old = $TimeValue
+	$TimeValue = TimerDiff($TimerValue)
+	$Ms = _Time_min2ms($TIME_SURVEY) - $TimeValue
+	$temp1 = $Ms / 1000
+	$temp2 = Mod($temp1, 3600)
+	$hours = ($temp1 - $temp2) / 3600
+	$temp1 = $temp2
+	$temp2 = Mod($temp1, 60)
+	$minutes = ($temp1 - $temp2) / 60
+	$TimeValue = $minutes
+	$temp1 = $temp2
+	$seconds = Round($temp1)
+	If $hours < 10 Then $hours = "0" & $hours
+	If $minutes < 10 Then $minutes = "0" & $minutes
+	If $min_old <> $TimeValue Then _Trace("Nouvelle recherche de mises à jour dans : " & $hours & "h" & $minutes & "min59sec.")
+	If $seconds < 10 Then $seconds = "0" & $seconds
+	GUICtrlSetData($TimeDisplay, $hours & ":" & $minutes & ":" & $seconds)
+EndFunc   ;==>_TimeReg
 
 Func _LanguageInitCombo()
 	; Assign a Local variable the search handle of all files in the current directory.
@@ -445,7 +578,7 @@ Func Param_Save() ;Enregistre les paramètres dans le fichier ini et  lance Para
 	IniWrite($param_ini, "PROXY", "Port", GUICtrlRead($iParam_ProxyPort))
 	IniWrite($param_ini, "PROXY", "User", GUICtrlRead($iParam_ProxyUser))
 	IniWrite($param_ini, "PROXY", "Password", _StringCryptDecrypt(True, GUICtrlRead($iParam_ProxyPwd)))
-	$First = False
+;~ 	$First = False
 	Param_Set()
 	Return True
 EndFunc   ;==>Param_Save

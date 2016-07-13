@@ -24,7 +24,7 @@ EndFunc   ;==>_WinGetCenter
 
 ; #FUNCTION# ====================================================================================================================
 ; Name ..........: _WinSetSize
-; Description ...: Change la taille d'une fenêtre en conservant sa position
+; Description ...: Change la taille d'une fenêtre en conservant sa position ===> ne sert à rien, il suffit d'utiliser Default comme mot clé pour les X et Y...
 ; Syntax ........: _WinSetSize($hGui, $iWidth, $iHeight)
 ; Parameters ....: $hGui                - a handle value.
 ;                  $iWidth              - an integer value.
@@ -167,9 +167,9 @@ Func _Trace($sString)
 	If $logDir & "\" & @YEAR & "-" & @MON & "-" & @MDAY & ".log" <> $logFile Then $logFile = $logDir & "\" & @YEAR & "-" & @MON & "-" & @MDAY & ".log" ; Gestion du changement de date en cours d'exécution du soft.
 	Local $hFileOpen = FileOpen($logFile, $FO_APPEND)
 	If $hFileOpen <> -1 Then
-		FileWriteLine($hFileOpen, "[" & @YEAR & "/" & @MON & "/" & @MDAY & "_" & @HOUR & ":" & @MIN & ":" & @SEC & ":" & @MSEC & "] " & $sString)
+		FileWriteLine($hFileOpen, "[" & @YEAR & "/" & @MON & "/" & @MDAY & "_" & @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & "] " & $sString)
 		FileClose($hFileOpen)
-		_ConsoleWrite(">" & $sString)
+		_ConsoleWrite("> [" & @YEAR & "/" & @MON & "/" & @MDAY & "_" & @HOUR & ":" & @MIN & ":" & @SEC & "." & @MSEC & "] " & $sString)
 	EndIf
 	Return True
 EndFunc   ;==>_Trace

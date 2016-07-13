@@ -1,16 +1,26 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=Resources\Images\TUC\TUC.ico
 #AutoIt3Wrapper_Outfile=TUC_Downloader.exe
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.2
+#AutoIt3Wrapper_Change2CUI=y
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.3
 #AutoIt3Wrapper_Res_Language=1036
 #AutoIt3Wrapper_Run_AU3Check=n
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
 #cs
 	2016-07-02 -- Premier commit sur github
-	2016-07-06 -- Correction du verrouillage de la taille mini de la fenêtre principale
-	|- Traductions en français
-	|- Corrections multiples
+	2016-07-06 v1.0.0.2 -- Correction du verrouillage de la taille mini de la fenêtre principale
+	- Traductions en français
+	- Corrections multiples
+	2016-07-13 v1.0.0.3
+	- Correction de la gestion des erreurs de connexions pour toutes les fonctions de récupérations sur le site Updapy
+	- Ajout de traductions françaises
+	- Ajout d'un max de traces de débug
+	- Ajout d'une constante pour définir si on tourne en débug ou non (traces conditionnées)
+	- Ajout de l'affichage du temps restant avant la prochaine recherche de MAJ automatique
+	- Suppression de la vérification de la taille téléchargée en fin de téléchargement : ça plantait la plupart du temps alors que sans vérif ça marche :s
+	- Modification du calcul de vitesses : on se base maintenant sur un tableau des 10 dernières valeurs glissantes pour calculer une moyenne
+	- Initialisation de la liste des logiciels suivi si c'est la première utilisation du soft
 #ce
 
 FileChangeDir(@ScriptDir)
@@ -25,13 +35,28 @@ Global $First = False
 Global $Add = 0
 Global $Param = 0
 Global $Survey = 0
+Global $TimerValue = 0, $TimeValue = 0
 Global $param_ini = @AppDataDir & "\TUC\TUC.ini"
 Global Const $AVEC_HSCROLL = False
+Global Const $AVEC_DEBUG = True
+
+Global $sSQliteDll = _SQLite_Startup(".\Resources\DLL\SQLite3.dll")
+If @error Then
+	_Trace("SQLite Error", "SQLite3.dll Can't be Loaded!")
+	Exit
+EndIf
+Global $hBDD = _SQLite_Open(".\Resources\BDD\TUC.sqlite") ; Open/Create a permanent disk database
+If @error Then
+	_Trace("SQLite Error", "Can't open or create a permanent Database!")
+	Exit
+EndIf
+_SQLite_Exec($hBDD, 'CREATE TABLE IF NOT EXISTS Logiciels (Titre_Long, Titre_Court, Selection, Version_Dispo, Version_Download, Version_Install)')
 
 If Not FileExists($param_ini) Then
 	MsgBox($MB_ICONWARNING, "TUC_Downloader - First start", "It seems like it is the first time you open ""TUC_Downloader""." & @CRLF & @CRLF & "Please set your parameters.") ; Pas de traduction ici : la langue n'est pas encore sélectionnée !
 	$First = True
 	DirCreate(@AppDataDir & "\TUC")
+	Init_Survey_List()
 EndIf
 Param_Set()
 
@@ -54,7 +79,7 @@ GUISetOnEvent($GUI_EVENT_RESTORE, "MainRestore")
 GUISetIcon(".\Resources\Images\TUC\TUC.ico")
 _WinSetMinMax($Main, 615, 225)
 
-;Création de la MenuBar (mb*)
+;Création de la MenuBar (mb)
 Global Enum $mbExit = 200, $mbAdd, $mbDown, $mbSearch, $mbParam, $mbSite, $mbAbout
 ;Menu "Fichier"
 Global $Menu_File = _GUICtrlMenu_CreateMenu() ;GUICtrlCreateMenu("&Fichier")
@@ -103,10 +128,15 @@ _GUICtrlToolbar_AddButton($ToolBar, $tbDown, 2, 0)
 _GUICtrlToolbar_AddButton($ToolBar, $tbSearch, 3, 0)
 _GUICtrlToolbar_AddButtonSep($ToolBar)
 _GUICtrlToolbar_AddButton($ToolBar, $tbParam, 4, 0)
+Global $TimeDisplay = GUICtrlCreateLabel("00:00:00", 510, 7, 100, 40, $SS_RIGHT)
+GUICtrlSetResizing(-1, BitOR($GUI_DOCKMENUBAR, $GUI_DOCKWIDTH, $GUI_DOCKRIGHT))
+GUICtrlSetFont(-1, 20)
+GUICtrlSetState(-1, $GUI_HIDE)
+
 Global $ItemClicked, $iCB, $tSCROLLINFO, $iDLLUser32 = DllOpen("user32.dll")
 Global $ListView = GUICtrlCreateListView(Translate("Software|Local Version|Online Version"), 8, 48, 601, 332)
-GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
-_GUICtrlListView_SetExtendedListViewStyle($ListView, BitOR($WS_EX_CLIENTEDGE, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT, $LVS_EX_UNDERLINECOLD, $LVS_EX_DOUBLEBUFFER))
+GUICtrlSetResizing(-1, BitOR($GUI_DOCKLEFT, $GUI_DOCKRIGHT, $GUI_DOCKTOP, $GUI_DOCKBOTTOM))
+_GUICtrlListView_SetExtendedListViewStyle($ListView, BitOR($WS_EX_CLIENTEDGE, $LVS_EX_SUBITEMIMAGES, $LVS_EX_FULLROWSELECT, $LVS_EX_UNDERLINECOLD, $LVS_EX_DOUBLEBUFFER, $LVS_EX_CHECKBOXES))
 If $AVEC_HSCROLL Then $wProcOldLV = _InitializeLV($ListView, $iCB, $tSCROLLINFO)
 _GUICtrlListView_SetColumnWidth($ListView, 0, 300)
 _GUICtrlListView_SetColumnWidth($ListView, 1, 140)
@@ -120,7 +150,7 @@ _GUICtrlStatusBar_SetParts($StatusBar, $aParts)
 If Not @Compiled Then
 	_GUICtrlStatusBar_SetText($StatusBar, "  " & Translate("Not compiled version"), 0)
 Else
-	_GUICtrlStatusBar_SetText($StatusBar, "  " & Translate("Version: ") & $Version, 0)
+	_GUICtrlStatusBar_SetText($StatusBar, "  " & Translate("Version:") & " " & $Version, 0)
 EndIf
 ;~ _GUICtrlStatusBar_EmbedControl($StatusBar, 2, GUICtrlGetHandle(GUICtrlCreateLabel("Surveillance inactive     ", 5,5)))
 _GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled") & "     ", 2)
@@ -155,17 +185,6 @@ Else
 EndIf
 #EndRegion ### END Koda GUI section ###
 
-Global $sSQliteDll = _SQLite_Startup(".\Resources\DLL\SQLite3.dll")
-If @error Then
-	_Trace("SQLite Error", "SQLite3.dll Can't be Loaded!")
-	Exit
-EndIf
-Global $hBDD = _SQLite_Open(".\Resources\BDD\TUC.sqlite") ; Open/Create a permanent disk database
-If @error Then
-	_Trace("SQLite Error", "Can't open or create a permanent Database!")
-	Exit
-EndIf
-_SQLite_Exec($hBDD, 'CREATE TABLE IF NOT EXISTS Logiciels (Titre_Long, Titre_Court, Selection, Version_Dispo, Version_Download, Version_Install)')
 Afficher_ListView()
 
 While 1
@@ -175,11 +194,17 @@ WEnd
 Func Tray_Survey()
 	If $Survey = 0 Then
 		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+		$TimerValue = TimerInit()
+		AdlibRegister("_TimeReg", 1000)
+		GUICtrlSetState($TimeDisplay, $GUI_SHOW)
 		_Trace("Surveillance active.")
 		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey enabled") & "     ", 2)
 		$Survey = 1
 	Else
 		AdlibUnRegister("_DownReg")
+		AdlibUnRegister("_TimeReg")
+		GUICtrlSetData($TimeDisplay, "00:00:00")
+		GUICtrlSetState($TimeDisplay, $GUI_HIDE)
 		_Trace("Surveillance inactive.")
 		TrayItemSetState($Tray_Survey, $TRAY_UNCHECKED)
 		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled") & "     ", 2)
@@ -356,7 +381,7 @@ Func tbAdd()
 		GUICtrlSetOnEvent(-1, "Add_btCancel")
 		Global $Add_List = GUICtrlCreateListView("", 5, 5, 300, 350, -1, BitOR($WS_EX_CLIENTEDGE, $LVS_EX_SUBITEMIMAGES, $LVS_EX_CHECKBOXES))
 		_GUICtrlListView_SetView($Add_List, 4)
-		GUICtrlSetResizing(-1, $GUI_DOCKLEFT + $GUI_DOCKRIGHT + $GUI_DOCKTOP + $GUI_DOCKBOTTOM)
+		GUICtrlSetResizing(-1, BitOR($GUI_DOCKLEFT, $GUI_DOCKRIGHT, $GUI_DOCKTOP, $GUI_DOCKBOTTOM))
 		GUICtrlSetOnEvent(-1, "Add_List")
 		GUISetState(@SW_SHOW, $Add)
 		#EndRegion ### END Koda GUI section ###
@@ -368,18 +393,42 @@ Func tbAdd()
 EndFunc   ;==>tbAdd
 
 Func tbDown($mb = 0)
-	If TrayItemGetState($Tray_Survey) = 65 Then AdlibUnRegister("_DownReg")
-	If Not tbSearch(1) Then Return
+	$FuncName = """tbDown"""
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
+	If TrayItemGetState($Tray_Survey) = 65 Then
+		AdlibUnRegister("_DownReg")
+		AdlibUnRegister("_TimeReg")
+		GUICtrlSetData($TimeDisplay, "00:00:00")
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Désenregistrement de la fonction ""_DownReg"".")
+	EndIf
+	If Not tbSearch(1) Then
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - La fonction ""tbSearch"" ne s'est pas terminée correctement : on sort de suite.")
+		If $mb = 0 Then MsgBox($MB_ICONWARNING, Translate("Online error"), Translate("Something went wrong during the online search.") & @CRLF & Translate("Please check your internet connexion."))
+		If TrayItemGetState($Tray_Survey) = 65 Then
+			AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+			AdlibRegister("_TimeReg", 1000)
+			$TimerValue = TimerInit()
+		EndIf
+		Return
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Comptage du nombre de softs à surveiller.")
 	;Telechargement des logiciels disponibles
 	Local $Dim = _GUICtrlListView_GetItemCount($ListView)
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Il y a " & $Dim & " softs à surveiller.")
 	Local $lien, $hDownload, $iBytesSize, $iFileSize, $prog, $delete
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Lancement de la boucle de récupération.")
 	For $i = 0 To $Dim - 1
 ;~ 		_ConsoleWrite(">"&_GUICtrlListView_GetItem($ListView, $i, 1)[3]&" / "&_GUICtrlListView_GetItem($ListView, $i, 2)[3]&@CRLF)
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Itération n°" & $i & ".")
 		If _GUICtrlListView_GetItem($ListView, $i, 1)[3] <> _GUICtrlListView_GetItem($ListView, $i, 2)[3] Then
+			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Cette appli n'a pas la même versio en local qu'en distant.")
 			$sMsg = SQL_Get_Data($hBDD, "Logiciels", "Titre_Court", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'")
+			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Le titre court de cette appli est : """ & $sMsg & """.")
 			If $sMsg <> "" Then
 				$lien = ""
 				$aGet = GetAppDetail($sMsg, $API, $Base64_ID)
+				If Not IsArray($aGet) Then Return
+				If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - La fonction ""GetAppDetail"" est finie. On traite ce qu'elle a renvoyé.")
 				If $aGet[6] <> "null" Then ;Le logiciel existe en français en 64bit
 					$lien = $aGet[6]
 				ElseIf $aGet[5] <> "null" Then ;Le logiciel existe en français en 32bit
@@ -391,6 +440,7 @@ Func tbDown($mb = 0)
 				Else
 					MsgBox($MB_ICONWARNING, Translate("No link found"), Translate("No download link has been found."))
 				EndIf
+				If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Le traitement est fini.")
 				;Traitement des logiciels à la con :
 				Switch _GUICtrlListView_GetItem($ListView, $i)[3]
 					Case "Skype"
@@ -455,16 +505,16 @@ Func tbDown($mb = 0)
 							If $recup >= 1.0000 Then $recup -= 1.0000
 							_Trace("Téléchargement terminé : " & $recup)
 						EndIf
-						If $recup > 0.5000 And $iFileSize > 0 Or $FileSize < 204800 Then
-							MsgBox($MB_ICONWARNING, Translate("Download error"), Translate("The download has gone wrong.") & @CRLF & _
-									Translate("Online size:") & " " & $iFileSize & " Bytes" & @CRLF & _
-									Translate("Local size:") & " " & $FileSize & " Bytes" & @CRLF & _
-									Translate("Ratio:") & " " & $recup, 15)
-							FileDelete($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
-						Else
-							SQL_Update_If_Different($hBDD, "Logiciels", "Version_Dispo", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
-							If _GUICtrlListView_GetItem($ListView, $i)[3] = "Skype" Then FileMove($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe", $CheminLogiciels & $sMsg & "_" & $aGet[2] & ".msi", $FC_OVERWRITE)
-						EndIf
+;~ 						If $recup > 0.5000 And $iFileSize > 0 Or $FileSize < 204800 Then
+;~ 							MsgBox($MB_ICONWARNING, Translate("Download error"), Translate("The download has gone wrong.") & @CRLF & _
+;~ 									Translate("Online size:") & " " & $iFileSize & " Bytes" & @CRLF & _
+;~ 									Translate("Local size:") & " " & $FileSize & " Bytes" & @CRLF & _
+;~ 									Translate("Ratio:") & " " & $recup, 15)
+;~ 							FileDelete($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe")
+;~ 						Else
+						SQL_Update_If_Different($hBDD, "Logiciels", "Version_Dispo", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
+						If _GUICtrlListView_GetItem($ListView, $i)[3] = "Skype" Then FileMove($CheminLogiciels & $sMsg & "_" & $aGet[2] & ".exe", $CheminLogiciels & $sMsg & "_" & $aGet[2] & ".msi", $FC_OVERWRITE)
+;~ 						EndIf
 					EndIf
 					_ProgressOff()
 				EndIf
@@ -475,24 +525,47 @@ Func tbDown($mb = 0)
 		EndIf
 	Next
 	If $mb = 0 Then MsgBox($MB_ICONINFORMATION, Translate("Download complete"), Translate("All downloads are completed."), 20)
-	If TrayItemGetState($Tray_Survey) = 65 Then AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+	If TrayItemGetState($Tray_Survey) = 65 Then
+		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+		AdlibRegister("_TimeReg", 1000)
+		$TimerValue = TimerInit()
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction.")
 EndFunc   ;==>tbDown
 
 Func tbSearch($mb = 0)
+	$FuncName = """tbSearch"""
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
+	If TrayItemGetState($Tray_Survey) = 65 Then
+		AdlibUnRegister("_DownReg")
+		AdlibUnRegister("_TimeReg")
+		GUICtrlSetData($TimeDisplay, "00:00:00")
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Désenregistrement de la fonction ""_DownReg"".")
+	EndIf
 	Local $succes = True
 	;Chercher les logiciels présents sur le disque
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Comptage du nombre de softs à surveiller.")
 	Local $Dim = _GUICtrlListView_GetItemCount($ListView)
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Il y a " & $Dim & " softs à surveiller.")
 	Local $aFileList = _FileListToArray($CheminLogiciels, "*", $FLTA_FILES)
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Récupération de la liste des softs locaux dans une array.")
 	If IsArray($aFileList) Then
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - On a bien récupéré une array. On peut continuer.")
 		Local $file_version
 		_ProgressOn(Translate("Local Files"), Translate("Searching for local softwares."), "", "", True, $Main, True)
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - On lance un Progress.")
 		_ProgressWait(True)
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - On met le Progress en mode attente.")
 		Sleep(2000)
 		_ProgressWait(False)
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - On met le Progress en mode progression.")
 		_ProgressSet(0, "0 / " & $Dim)
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - On initialise le Progress à 0.")
 		For $i = 0 To $Dim - 1
+			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Itération n°" & $i & ".")
 			If _ProgressGet() = 1 Then
 				$sMsg = SQL_Get_Data($hBDD, "Logiciels", "Titre_Court", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'")
+				If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Le titre court de cette appli est : """ & $sMsg & """.")
 				$file_version = ""
 				If $sMsg <> "" Then
 					For $j = 1 To $aFileList[0]
@@ -504,6 +577,7 @@ Func tbSearch($mb = 0)
 				EndIf
 				$prog = Round(($i + 1 / $Dim) * 100)
 				_ProgressSet($prog, $i + 1 & " / " & $Dim)
+				If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin itération n°" & $i & ".")
 			EndIf
 			If _ProgressGet() = 2 Then ;Si le progress est en pause on fait en sorte que le for n'avance plus et on met un peu de sleep pour soulager le processeur.
 				$i -= 1
@@ -514,9 +588,11 @@ Func tbSearch($mb = 0)
 				ExitLoop
 			EndIf
 		Next
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin recherche locale.")
 		_ProgressOff()
 	EndIf
 	If $succes = False Then Return
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Début recherche distante.")
 	;Chercher les versions disponibles en ligne
 	Local $sMsg
 	_ProgressOn(Translate("Remote Files"), Translate("Searching for remote files versions."), Translate("Initializing..."), ".\Resources\Images\TUC\TUC.ico", True, $Main, True)
@@ -526,6 +602,10 @@ Func tbSearch($mb = 0)
 			$sMsg = SQL_Get_Data($hBDD, "Logiciels", "Titre_Court", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'")
 			If $sMsg <> "" Then
 				$aGet = GetAppDetail($sMsg, $API, $Base64_ID)
+				If Not IsArray($aGet) Then
+					_ProgressOff()
+					Return
+				EndIf
 				SQL_Update_If_Different($hBDD, "Logiciels", "Version_Download", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
 			EndIf
 			$prog = Round(($i / $Dim) * 100)
@@ -550,6 +630,12 @@ Func tbSearch($mb = 0)
 	Else
 		Return False
 	EndIf
+	If TrayItemGetState($Tray_Survey) = 65 Then
+		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+		AdlibRegister("_TimeReg", 1000)
+		$TimerValue = TimerInit()
+	EndIf
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction.")
 EndFunc   ;==>tbSearch
 
 Func tbParam()
@@ -578,21 +664,21 @@ Func tbParam()
 		Global $TabParam_Updapy = GUICtrlCreateTabItem(Translate("Updapy account"))
 		GUICtrlCreateGroup(Translate("User informations"), 20, 35, 270, 75)
 		GUICtrlSetFont(-1, 10)
-		GUICtrlCreateLabel(Translate("User name :"), 40, 55, 80, 17, $SS_RIGHT)
+		GUICtrlCreateLabel(Translate("User name:"), 40, 55, 80, 17, $SS_RIGHT)
 		Global $iParam_UpdapyUser = GUICtrlCreateInput("", 125, 52, 150, 20)
-		GUICtrlCreateLabel(Translate("User password :"), 40, 80, 80, 17, $SS_RIGHT)
+		GUICtrlCreateLabel(Translate("User password:"), 40, 80, 80, 17, $SS_RIGHT)
 		Global $iParam_UpdapyPwd = GUICtrlCreateInput("", 125, 77, 150, 20, $ES_PASSWORD)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateGroup(Translate("API key"), 20, 115, 270, 50)
 		GUICtrlSetFont(-1, 10)
-		GUICtrlCreateLabel(Translate("Personal key :"), 40, 137, 80, 17, $SS_RIGHT)
+		GUICtrlCreateLabel(Translate("Personal key:"), 40, 137, 80, 17, $SS_RIGHT)
 		Global $iParam_UpdapyApi = GUICtrlCreateInput("", 125, 134, 150, 20)
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		;Onglet Paramètres
 		Global $TabParam_Options = GUICtrlCreateTabItem(Translate("Options"))
 		GUICtrlCreateGroup(Translate("Language"), 20, 35, 270, 50)
 		GUICtrlSetFont(-1, 10)
-		GUICtrlCreateLabel(Translate("Choose a language :"), 30, 55, 110, 17, $SS_RIGHT)
+		GUICtrlCreateLabel(Translate("Choose a language:"), 30, 55, 110, 17, $SS_RIGHT)
 		Global $cParam_Language = GUICtrlCreateCombo("", 145, 52, 130, 20)
 		GUICtrlSetOnEvent(-1, "cParam_Language")
 		GUICtrlSetData(-1, _LanguageInitCombo(), "English")
@@ -600,7 +686,7 @@ Func tbParam()
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateGroup(Translate("Automated downloads"), 20, 90, 270, 50)
 		GUICtrlSetFont(-1, 10)
-		GUICtrlCreateLabel(Translate("Frequency :"), 30, 110, 110, 17, $SS_RIGHT)
+		GUICtrlCreateLabel(Translate("Frequency:"), 30, 110, 110, 17, $SS_RIGHT)
 		Global $iParam_CheckFreq = GUICtrlCreateInput("60", 145, 108, 90, 20)
 		GUICtrlSetTip(-1, Translate("Write here the time (minutes) you want to wait between 2 searches for updates."))
 		GUICtrlCreateLabel(Translate("minutes"), 240, 110, 50, 17)
@@ -613,7 +699,7 @@ Func tbParam()
 		GUICtrlCreateGroup("", -99, -99, 1, 1)
 		GUICtrlCreateGroup(Translate("Download directory"), 20, 225, 270, 100)
 		GUICtrlSetFont(-1, 10)
-		GUICtrlCreateLabel(Translate("Current directory :"), 30, 245, 170, 17)
+		GUICtrlCreateLabel(Translate("Current directory:"), 30, 245, 170, 17)
 		Global $iParam_DownDir = GUICtrlCreateInput(@MyDocumentsDir & "\TUC_Downloads", 35, 265, 240, 20)
 		Global $bParam_DownDir = GUICtrlCreateButton(Translate("Select directory"), 175, 290, 100, 25)
 		GUICtrlSetOnEvent(-1, "bParam_DownDir")
@@ -629,10 +715,10 @@ Func tbParam()
 		GUICtrlSetState(-1, $GUI_CHECKED)
 		Global $rParam_ManProxy = GUICtrlCreateRadio(Translate("Configure the proxy manually"), 40, 105, 200, 17)
 		GUICtrlSetOnEvent(-1, "rParam_ManProxy")
-		Global $lParam_ProxyUrl = GUICtrlCreateLabel(Translate("Proxy URL :"), 40, 136, 80, 17, $SS_RIGHT)
-		Global $lParam_ProxyPort = GUICtrlCreateLabel(Translate("Connexion port :"), 40, 161, 80, 17, $SS_RIGHT)
-		Global $lParam_ProxyUser = GUICtrlCreateLabel(Translate("User name :"), 40, 186, 80, 17, $SS_RIGHT)
-		Global $lParam_ProxyPwd = GUICtrlCreateLabel(Translate("User password :"), 40, 211, 80, 17, $SS_RIGHT)
+		Global $lParam_ProxyUrl = GUICtrlCreateLabel(Translate("Proxy URL:"), 40, 136, 80, 17, $SS_RIGHT)
+		Global $lParam_ProxyPort = GUICtrlCreateLabel(Translate("Connexion port:"), 40, 161, 80, 17, $SS_RIGHT)
+		Global $lParam_ProxyUser = GUICtrlCreateLabel(Translate("User name:"), 40, 186, 80, 17, $SS_RIGHT)
+		Global $lParam_ProxyPwd = GUICtrlCreateLabel(Translate("User password:"), 40, 211, 80, 17, $SS_RIGHT)
 		Global $iParam_ProxyUrl = GUICtrlCreateInput("", 125, 133, 150, 20)
 		Global $iParam_ProxyPort = GUICtrlCreateInput("", 125, 158, 150, 20)
 		Global $iParam_ProxyUser = GUICtrlCreateInput("", 125, 183, 150, 20)
@@ -668,6 +754,10 @@ EndFunc   ;==>tbParam
 
 Func Add_btRefresh()
 	Local $aGet = GetAppsList($API, $Base64_ID)
+	If Not IsArray($aGet) Then
+		MsgBox($MB_ICONWARNING, Translate("Online error"), Translate("Something went wrong during the online search.") & @CRLF & Translate("Please check your internet connexion."))
+		Return
+	EndIf
 	Local $aDim = UBound($aGet)
 	Local $hDownload = 0
 	Local $name = ""
@@ -768,7 +858,10 @@ Func bParam_Cancel()
 EndFunc   ;==>bParam_Cancel
 
 Func bParam_OK()
-	If Param_Save() Then Param_Close()
+	If Param_Save() Then
+		Param_Close()
+		If $First = True Then tbAdd()
+	EndIf
 EndFunc   ;==>bParam_OK
 
 Func bParam_Apply()
