@@ -92,28 +92,28 @@ Func GetAppDetail($app, $API, $Base64_ID)
 		MsgBox($MB_ICONERROR, "Erreur", "Erreur de création de l'objet ""Requête HTTP"".")
 		Return -1
 	EndIf
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [1]")
 		Return
 	EndIf
 	;Envoi de le requête HTTP
 	$oHTTP.Open("GET", "http://www.updapy.com/api/v1/last-version?application=" & $app & "&key=" & $API)
 	If @error Then Return
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [2].")
 		Return
 	EndIf
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture HTTP GET request.")
 	$oHTTP.SetRequestHeader("Authorization", "Basic " & $Base64_ID)
 	If @error Then Return
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [3].")
 		Return
 	EndIf
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Définition du header HTTP.")
 	$oHTTP.Send()
 	If @error Then Return
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [4].")
 		Return
 	EndIf
@@ -168,7 +168,7 @@ Func GetAppsList($API, $Base64_ID)
 		_ProgressOff()
 		Return -1
 	EndIf
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [11]")
 		_ProgressOff()
 		Return
@@ -179,7 +179,7 @@ Func GetAppsList($API, $Base64_ID)
 		_ProgressOff()
 		Return
 	EndIf
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [12].")
 		_ProgressOff()
 		Return
@@ -190,7 +190,7 @@ Func GetAppsList($API, $Base64_ID)
 		_ProgressOff()
 		Return
 	EndIf
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [13].")
 		_ProgressOff()
 		Return
@@ -202,7 +202,7 @@ Func GetAppsList($API, $Base64_ID)
 		Return
 	EndIf
 
-	If Not Ping("updapy.com") Then
+	If Not _TestOnLine("updapy.com") Then
 		_Trace("Abandon car site Updapy injoignable [14].")
 		_ProgressOff()
 		Return

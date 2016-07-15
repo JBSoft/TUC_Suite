@@ -251,6 +251,25 @@ Func SetProxy($param)
 	EndSwitch
 EndFunc   ;==>SetProxy
 
+Func _TestOnLine($adr)
+	Local $FuncName = """_TestOnLine"""
+	Local $Res = True
+	If Not Ping($adr) Then
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Echec ping 1 (" & $adr & ").")
+		Sleep(1000)
+		If Not Ping($adr) Then
+			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Echec ping 2 (" & $adr & ").")
+			Sleep(1000)
+			If Not Ping($adr) Then
+				If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Echec ping 3 (" & $adr & ").")
+				$Res = False
+			EndIf
+		EndIf
+	EndIf
+	If $AVEC_DEBUG And $Res Then _Trace("{DEBUG} - " & $FuncName & " - Ping OK (" & $adr & ").")
+	Return $Res
+EndFunc   ;==>_TestOnLine
+
 #EndRegion Fonctions de connexion
 
 #Region Fonctions diverses

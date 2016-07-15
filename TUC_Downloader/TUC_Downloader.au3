@@ -21,6 +21,9 @@
 	- Suppression de la vérification de la taille téléchargée en fin de téléchargement : ça plantait la plupart du temps alors que sans vérif ça marche :s
 	- Modification du calcul de vitesses : on se base maintenant sur un tableau des 10 dernières valeurs glissantes pour calculer une moyenne
 	- Initialisation de la liste des logiciels suivi si c'est la première utilisation du soft
+	2016-07-15 v1.0.0.4
+	- Correction de la relance de la recherche automatique en fin de recheche manuelle pendant une recherche automatique.
+	- Création d'une fonction ping "à trois étages" pour essayer de pinguer 3 fois avant de déclarer l'échec. Le retour est à True dès le premier Ping valide.
 #ce
 
 FileChangeDir(@ScriptDir)
@@ -624,18 +627,19 @@ Func tbSearch($mb = 0)
 	Next
 	If $mb = 0 Then Afficher_ListView()
 	_ProgressOff()
+	If TrayItemGetState($Tray_Survey) = 65 And $mb = 0 Then
+		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+		AdlibRegister("_TimeReg", 1000)
+		$TimerValue = TimerInit()
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Réenregistement de la fonction ""_DownReg"".")
+	EndIf
 	If $mb = 0 Then MsgBox($MB_ICONINFORMATION, Translate("Update completed"), Translate("End of remote softwares versions research."), 20)
+	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction.")
 	If $succes Then
 		Return True
 	Else
 		Return False
 	EndIf
-	If TrayItemGetState($Tray_Survey) = 65 Then
-		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
-		AdlibRegister("_TimeReg", 1000)
-		$TimerValue = TimerInit()
-	EndIf
-	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin fonction.")
 EndFunc   ;==>tbSearch
 
 Func tbParam()
