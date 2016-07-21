@@ -219,7 +219,8 @@ Func GetAppsList($API, $Base64_ID)
 ;~ 	_ProgressSet(20, "Décodage de la réponse HTTP.")
 	Local $tab1 = _JSONDecode($HTTPresponse)
 	Local $tab2 = $tab1[1][1]
-	Local $NbSofts = UBound($tab2)
+	Global $NbSofts = UBound($tab2)
+	_Trace($NbSofts & " logiciels disponibles aujourd'hui !")
 ;~ 	_ProgressSet(30, $NbSofts&" logiciels trouvés.")
 ;~ 	MsgBox(64, "Nombre de Logiciels détectés", "Un total de "&$NbSofts&" logiciels existent.")
 	Local $Tableau[$NbSofts][2]
@@ -240,6 +241,7 @@ Func GetAppsList($API, $Base64_ID)
 EndFunc   ;==>GetAppsList
 
 Func Quit()
+	Check_ListView()
 	_SQLite_Close($hBDD)
 	_SQLite_Shutdown()
 	If $AVEC_HSCROLL Then
@@ -285,7 +287,7 @@ EndFunc   ;==>_BmpGetHandle
 
 Func Afficher_ListView()
 	_GUICtrlListView_DeleteAllItems($ListView)
-	Local $aResult, $iRows, $iColumns, $iRval, $aResult2, $iRows2, $iColumns2, $iRval2, $aResult3, $iRows3, $iColumns3, $iRval3, $aResult4, $iRows4, $iColumns4, $iRval4
+	Local $aResult, $iRows, $iColumns, $iRval, $aResult2, $iRows2, $iColumns2, $iRval2, $aResult3, $iRows3, $iColumns3, $iRval3, $aResult4, $iRows4, $iColumns4, $iRval4, $hQuery
 	$iRval = _SQLite_GetTable2d($hBDD, "SELECT Titre_Long, Titre_Court FROM Logiciels ORDER BY Titre_Court ASC;", $aResult, $iRows, $iColumns)
 	$iRval2 = _SQLite_GetTable2d($hBDD, "SELECT Titre_Court, Selection FROM Logiciels ORDER BY Titre_Court ASC;", $aResult2, $iRows2, $iColumns2)
 	$iRval3 = _SQLite_GetTable2d($hBDD, "SELECT Titre_Court, Version_Dispo FROM Logiciels ORDER BY Titre_Court ASC;", $aResult3, $iRows3, $iColumns3)
@@ -293,7 +295,7 @@ Func Afficher_ListView()
 	If $iRval = $SQLITE_OK And $iRval2 = $SQLITE_OK And $iRval3 = $SQLITE_OK And $iRval4 = $SQLITE_OK Then
 		_GUICtrlListView_BeginUpdate($ListView)
 		For $i = 1 To $iRows - 1
-			If $aResult2[$i][1] = "OUI" Then
+			If $aResult2[$i][1] = "OUI" Or  $aResult2[$i][1] = "OUIc" Then
 				$item = $aResult[$i][0] & "|" & $aResult3[$i][1] & "|" & $aResult4[$i][1]
 ;~ 				_ConsoleWrite(">"&$item)
 				GUICtrlCreateListViewItem($item, $ListView)
@@ -303,12 +305,30 @@ Func Afficher_ListView()
 		Next
 		_GUICtrlListView_EndUpdate($ListView)
 	EndIf
-	_GUICtrlStatusBar_SetText($StatusBar, @TAB & _GUICtrlListView_GetItemCount($ListView) & " " & Translate("softwares followed."), 1)
+	Local $Dim = _GUICtrlListView_GetItemCount($ListView)
+	For $i = 0 To $Dim - 1
+		_SQLite_QuerySingleRow($hBDD, "SELECT Selection FROM Logiciels WHERE Titre_Long = '"&SQL_String(_GUICtrlListView_GetItem($ListView,$i)[3])&"'", $hQuery)
+;~ 		_Trace("_GUICtrlListView_GetItem($ListView,$i)[3] / $hQuery[0]="&_GUICtrlListView_GetItem($ListView,$i)[3]&" / "&$hQuery[0])
+		If $hQuery[0] = "OUIc" Then _GUICtrlListView_SetItemChecked($ListView, $i)
+	Next
+	_GUICtrlStatusBar_SetText($StatusBar, @TAB & $Dim & " " & Translate("softwares followed."), 1)
 EndFunc   ;==>Afficher_ListView
+
+Func Check_ListView()
+	Local $Dim = _GUICtrlListView_GetItemCount($ListView)
+	For $i = 0 To $Dim - 1
+		If _GUICtrlListView_GetItemChecked($ListView, $i) Then
+			$value = "OUIc"
+		Else
+			$value = "OUI"
+		EndIf
+		SQL_Update_If_Different($hBDD, "Logiciels", "Selection", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $value)
+	Next
+EndFunc   ;==>Check_ListView
 
 Func Afficher_Add_List()
 	_GUICtrlListView_DeleteAllItems($Add_List)
-	Local $aResult, $iRows, $iColumns, $iRval, $aResult2, $iRows2, $iColumns2, $iRval2
+	Local $aResult, $iRows, $iColumns, $iRval, $aResult2, $iRows2, $iColumns2, $iRval2, $hQuery
 	$iRval = _SQLite_GetTable2d($hBDD, "SELECT Titre_Long, Titre_Court FROM Logiciels ORDER BY Titre_Court ASC;", $aResult, $iRows, $iColumns)
 	$iRval2 = _SQLite_GetTable2d($hBDD, "SELECT Titre_Court, Selection FROM Logiciels ORDER BY Titre_Court ASC;", $aResult2, $iRows2, $iColumns2)
 	If $iRval = $SQLITE_OK And $iRval2 = $SQLITE_OK Then
@@ -316,10 +336,13 @@ Func Afficher_Add_List()
 		For $i = 1 To $iRows
 			GUICtrlCreateListViewItem($aResult[$i][0], $Add_List)
 			GUICtrlSetImage(-1, ".\Resources\Images\Softs\BMP\" & String($aResult[$i][1]) & ".bmp")
-			If $aResult2[$i][1] = "OUI" Then _GUICtrlListView_SetItemChecked($Add_List, $i - 1)
+			If $aResult2[$i][1] = "OUI" Or $aResult2[$i][1] = "OUIc" Then _GUICtrlListView_SetItemChecked($Add_List, $i - 1)
 		Next
 		_GUICtrlListView_EndUpdate($Add_List)
 	EndIf
+	_SQLite_QuerySingleRow($hBDD, "SELECT COUNT(Titre_Long) FROM Logiciels", $hQuery)
+	Global $NbSofts = $hQuery[0]
+	GUICtrlSetData($Add_Count, $NbSofts & " " & Translate("Available softwares"))
 EndFunc   ;==>Afficher_Add_List
 
 Func Init_Survey_List()
@@ -604,3 +627,8 @@ Func ProxyManuEnable($param)
 		GUICtrlSetState($iParam_ProxyPwd, $GUI_DISABLE)
 	EndIf
 EndFunc   ;==>ProxyManuEnable
+
+Func _ResetTime()
+	GUICtrlSetData($TimeDisplay, "00:00:00")
+	$TimeValue = 0
+EndFunc   ;==>_ResetTime

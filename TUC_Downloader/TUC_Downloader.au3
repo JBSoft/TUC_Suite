@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_Icon=Resources\Images\TUC\TUC.ico
 #AutoIt3Wrapper_Outfile=TUC_Downloader.exe
 #AutoIt3Wrapper_Change2CUI=y
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.3
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.5
 #AutoIt3Wrapper_Res_Language=1036
 #AutoIt3Wrapper_Run_AU3Check=n
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -24,6 +24,15 @@
 	2016-07-15 v1.0.0.4
 	- Correction de la relance de la recherche automatique en fin de recheche manuelle pendant une recherche automatique.
 	- Création d'une fonction ping "à trois étages" pour essayer de pinguer 3 fois avant de déclarer l'échec. Le retour est à True dès le premier Ping valide.
+	2016-07-21 v1.0.0.5
+	- Ajout de la possibilité de lancer la surveillance via le menu.
+	- Ajout du nombre de logiciels disponibles en haut de la fenêtre "$Add".
+	- Correction de la recherche des versions locales.
+	- Correction du réenregistrement de la fonction de surveillance lors des recherche manuelles de mise à jour.
+	- Cochage automatique de tous les logiciels suivi et enregistrement des décochages en BDD.
+	- Téléchargement uniquement des logiciels cochés, mais récupération des infos de tous les logiciels (cochés ou non).
+	- .
+	- .
 #ce
 
 FileChangeDir(@ScriptDir)
@@ -83,11 +92,13 @@ GUISetIcon(".\Resources\Images\TUC\TUC.ico")
 _WinSetMinMax($Main, 615, 225)
 
 ;Création de la MenuBar (mb)
-Global Enum $mbExit = 200, $mbAdd, $mbDown, $mbSearch, $mbParam, $mbSite, $mbAbout
+Global Enum $mbExit = 200, $mbAdd, $mbDown, $mbSearch, $mbParam, $mbSite, $mbAbout, $mbSurvey
 ;Menu "Fichier"
 Global $Menu_File = _GUICtrlMenu_CreateMenu() ;GUICtrlCreateMenu("&Fichier")
-_GUICtrlMenu_InsertMenuItem($Menu_File, 0, Translate("&Quit"), $mbExit)
-_GUICtrlMenu_SetItemBmp($Menu_File, 0, _BmpGetHandle(".\Resources\Images\cancel.bmp"))
+_GUICtrlMenu_InsertMenuItem($Menu_File, 0, Translate("&Survey"), $mbSurvey)
+_GUICtrlMenu_InsertMenuItem($Menu_File, 1, "", 0)
+_GUICtrlMenu_InsertMenuItem($Menu_File, 2, Translate("&Quit"), $mbExit)
+_GUICtrlMenu_SetItemBmp($Menu_File, 2, _BmpGetHandle(".\Resources\Images\cancel.bmp"))
 ;Menu "Gestion"
 Global $Menu_Manage = _GUICtrlMenu_CreateMenu() ;GUICtrlCreateMenu("&Gestion")
 _GUICtrlMenu_InsertMenuItem($Menu_Manage, 0, Translate("&Add a software to follow"), $mbAdd)
@@ -202,6 +213,7 @@ Func Tray_Survey()
 		GUICtrlSetState($TimeDisplay, $GUI_SHOW)
 		_Trace("Surveillance active.")
 		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey enabled") & "     ", 2)
+		_GUICtrlMenu_SetItemState($Menu_File, 0, $MFS_CHECKED, True)
 		$Survey = 1
 	Else
 		AdlibUnRegister("_DownReg")
@@ -211,6 +223,7 @@ Func Tray_Survey()
 		_Trace("Surveillance inactive.")
 		TrayItemSetState($Tray_Survey, $TRAY_UNCHECKED)
 		_GUICtrlStatusBar_SetText($StatusBar, @TAB & @TAB & Translate("Survey disabled") & "     ", 2)
+		_GUICtrlMenu_SetItemState($Menu_File, 0, $MFS_CHECKED, False)
 		$Survey = 0
 	EndIf
 EndFunc   ;==>Tray_Survey
@@ -351,6 +364,8 @@ Func MainCommand($hWnd, $iMsg, $wParam, $lParam) ;Fonction qui gère la "MenuBar
 			Help_About()
 		Case $mbSite
 			Help_Site()
+		Case $mbSurvey
+			Tray_Survey()
 	EndSwitch
 	Return $GUI_RUNDEFMSG
 EndFunc   ;==>MainCommand
@@ -376,16 +391,17 @@ Func tbAdd()
 		Global $Add = GUICreate(Translate("Add softwares"), $gui_Largeur, $gui_Hauteur, $aCenter[0], $aCenter[1])
 		GUISetOnEvent($GUI_EVENT_CLOSE, "AddClose")
 		GUISetIcon(".\Resources\Images\TUC\TUC.ico")
+		Global $Add_Count = GUICtrlCreateLabel("---", ($gui_Largeur/2) - 100, 5, 200, 17, $SS_CENTER)
+		Global $Add_List = GUICtrlCreateListView("", 5, 25, 300, 330, -1, BitOR($WS_EX_CLIENTEDGE, $LVS_EX_SUBITEMIMAGES, $LVS_EX_CHECKBOXES))
+		_GUICtrlListView_SetView($Add_List, 4)
+		GUICtrlSetResizing(-1, BitOR($GUI_DOCKLEFT, $GUI_DOCKRIGHT, $GUI_DOCKTOP, $GUI_DOCKBOTTOM))
+		GUICtrlSetOnEvent(-1, "Add_List")
 		Global $Add_btRefresh = GUICtrlCreateButton(Translate("&Refresh"), 50, 365, 70, 25)
 		GUICtrlSetOnEvent(-1, "Add_btRefresh")
 		Global $Add_btOK = GUICtrlCreateButton("&OK", 120, 365, 70, 25)
 		GUICtrlSetOnEvent(-1, "Add_btOK")
 		Global $Add_btCancel = GUICtrlCreateButton(Translate("&Cancel"), 190, 365, 70, 25)
 		GUICtrlSetOnEvent(-1, "Add_btCancel")
-		Global $Add_List = GUICtrlCreateListView("", 5, 5, 300, 350, -1, BitOR($WS_EX_CLIENTEDGE, $LVS_EX_SUBITEMIMAGES, $LVS_EX_CHECKBOXES))
-		_GUICtrlListView_SetView($Add_List, 4)
-		GUICtrlSetResizing(-1, BitOR($GUI_DOCKLEFT, $GUI_DOCKRIGHT, $GUI_DOCKTOP, $GUI_DOCKBOTTOM))
-		GUICtrlSetOnEvent(-1, "Add_List")
 		GUISetState(@SW_SHOW, $Add)
 		#EndRegion ### END Koda GUI section ###
 		Afficher_Add_List()
@@ -398,21 +414,17 @@ EndFunc   ;==>tbAdd
 Func tbDown($mb = 0)
 	$FuncName = """tbDown"""
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
-	If TrayItemGetState($Tray_Survey) = 65 Then
-		AdlibUnRegister("_DownReg")
-		AdlibUnRegister("_TimeReg")
-		GUICtrlSetData($TimeDisplay, "00:00:00")
-		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Désenregistrement de la fonction ""_DownReg"".")
-	EndIf
+	Check_ListView()
 	If Not tbSearch(1) Then
 		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - La fonction ""tbSearch"" ne s'est pas terminée correctement : on sort de suite.")
 		If $mb = 0 Then MsgBox($MB_ICONWARNING, Translate("Online error"), Translate("Something went wrong during the online search.") & @CRLF & Translate("Please check your internet connexion."))
-		If TrayItemGetState($Tray_Survey) = 65 Then
-			AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
-			AdlibRegister("_TimeReg", 1000)
-			$TimerValue = TimerInit()
-		EndIf
 		Return
+	EndIf
+	If $Survey = 1 Then
+		AdlibUnRegister("_DownReg")
+		AdlibUnRegister("_TimeReg")
+		_ResetTime()
+		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Désenregistrement de la fonction ""_DownReg"".")
 	EndIf
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Comptage du nombre de softs à surveiller.")
 	;Telechargement des logiciels disponibles
@@ -423,7 +435,7 @@ Func tbDown($mb = 0)
 	For $i = 0 To $Dim - 1
 ;~ 		_ConsoleWrite(">"&_GUICtrlListView_GetItem($ListView, $i, 1)[3]&" / "&_GUICtrlListView_GetItem($ListView, $i, 2)[3]&@CRLF)
 		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Itération n°" & $i & ".")
-		If _GUICtrlListView_GetItem($ListView, $i, 1)[3] <> _GUICtrlListView_GetItem($ListView, $i, 2)[3] Then
+		If _GUICtrlListView_GetItem($ListView, $i, 1)[3] <> _GUICtrlListView_GetItem($ListView, $i, 2)[3] And _GUICtrlListView_GetItemChecked($ListView, $i) Then
 			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Cette appli n'a pas la même versio en local qu'en distant.")
 			$sMsg = SQL_Get_Data($hBDD, "Logiciels", "Titre_Court", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'")
 			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Le titre court de cette appli est : """ & $sMsg & """.")
@@ -528,7 +540,8 @@ Func tbDown($mb = 0)
 		EndIf
 	Next
 	If $mb = 0 Then MsgBox($MB_ICONINFORMATION, Translate("Download complete"), Translate("All downloads are completed."), 20)
-	If TrayItemGetState($Tray_Survey) = 65 Then
+	Afficher_ListView()
+	If $Survey = 1 Then
 		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
 		AdlibRegister("_TimeReg", 1000)
 		$TimerValue = TimerInit()
@@ -539,10 +552,11 @@ EndFunc   ;==>tbDown
 Func tbSearch($mb = 0)
 	$FuncName = """tbSearch"""
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Ouverture fonction.")
-	If TrayItemGetState($Tray_Survey) = 65 Then
+	Check_ListView()
+	If $Survey = 1 Then
 		AdlibUnRegister("_DownReg")
 		AdlibUnRegister("_TimeReg")
-		GUICtrlSetData($TimeDisplay, "00:00:00")
+		_ResetTime()
 		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Désenregistrement de la fonction ""_DownReg"".")
 	EndIf
 	Local $succes = True
@@ -572,8 +586,10 @@ Func tbSearch($mb = 0)
 				$file_version = ""
 				If $sMsg <> "" Then
 					For $j = 1 To $aFileList[0]
-						If StringInStr($aFileList[$j], $sMsg) Then
-							$file_version = StringTrimRight(StringTrimLeft($aFileList[$j], StringLen($sMsg) + 1), 4)
+						If StringInStr($aFileList[$j], $sMsg&"_") Then
+							If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Logiciel """&$sMsg &"_"" trouvé dans """&$aFileList[$j]&""".")
+							$file_version = StringTrimRight(StringTrimLeft($aFileList[$j], StringLen($sMsg&"_") ), 4)
+							If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - La version locale de """&$sMsg &""" est : "&$file_version&".")
 						EndIf
 					Next
 					SQL_Update_If_Different($hBDD, "Logiciels", "Version_Dispo", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $file_version)
@@ -594,7 +610,15 @@ Func tbSearch($mb = 0)
 		If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Fin recherche locale.")
 		_ProgressOff()
 	EndIf
-	If $succes = False Then Return
+	If $succes = False Then
+		If $Survey = 1 Then; And $mb = 0
+			AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+			AdlibRegister("_TimeReg", 1000)
+			$TimerValue = TimerInit()
+			If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Réenregistement de la fonction ""_DownReg"".")
+		EndIf
+		Return
+	EndIf
 	If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Début recherche distante.")
 	;Chercher les versions disponibles en ligne
 	Local $sMsg
@@ -607,6 +631,12 @@ Func tbSearch($mb = 0)
 				$aGet = GetAppDetail($sMsg, $API, $Base64_ID)
 				If Not IsArray($aGet) Then
 					_ProgressOff()
+					If $Survey = 1 Then; And $mb = 0
+						AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
+						AdlibRegister("_TimeReg", 1000)
+						$TimerValue = TimerInit()
+						If $AVEC_DEBUG Then _Trace("{DEBUG} - " & $FuncName & " - Réenregistement de la fonction ""_DownReg"".")
+					EndIf
 					Return
 				EndIf
 				SQL_Update_If_Different($hBDD, "Logiciels", "Version_Download", "Titre_Long = '" & SQL_String(_GUICtrlListView_GetItem($ListView, $i)[3]) & "'", $aGet[2])
@@ -627,7 +657,7 @@ Func tbSearch($mb = 0)
 	Next
 	If $mb = 0 Then Afficher_ListView()
 	_ProgressOff()
-	If TrayItemGetState($Tray_Survey) = 65 And $mb = 0 Then
+	If $Survey = 1 Then; And $mb = 0
 		AdlibRegister("_DownReg", _Time_min2ms($TIME_SURVEY))
 		AdlibRegister("_TimeReg", 1000)
 		$TimerValue = TimerInit()
@@ -800,7 +830,7 @@ Func Add_btOK()
 	Local $Dim = _GUICtrlListView_GetItemCount($Add_List)
 	For $i = 0 To $Dim - 1
 		If _GUICtrlListView_GetItemChecked($Add_List, $i) Then
-			$value = "OUI"
+			$value = "OUIc"
 		Else
 			$value = "NON"
 		EndIf
